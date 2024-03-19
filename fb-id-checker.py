@@ -4,13 +4,13 @@ from rich.console import Console
 from rich.prompt import Prompt
 
 
-def check_url(base_url, start, end, output_file_path, console):
+def check_url(base_url, start_id, end_id, output_file_path, console):
     """
-    Checks and validates Facebook profile URLs in a given range.
+    Checks and validates Facebook profile URLs from a start ID to an end ID.
 
     :param base_url: String format of the base URL to check.
-    :param start: Start of the range.
-    :param end: End of the range.
+    :param start_id: ID to start search.
+    :param end_id: ID to end search.
     :param output_file_path: Path to the output file.
     """
     headers = {
@@ -18,8 +18,8 @@ def check_url(base_url, start, end, output_file_path, console):
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
     }
 
-    with open(output_file_path, "w") as output_file:
-        for i in range(start, end + 1):
+    with open(output_file_path, "a") as output_file:
+        for i in range(start_id, end_id + 1):
             url = base_url.format(i)
             try:
                 response = requests.get(url, headers=headers, timeout=5)
@@ -37,8 +37,8 @@ def check_url(base_url, start, end, output_file_path, console):
                             f"[bold green]Valid URL found:[/bold green] {url} with name: {full_name}"
                         )
                     else:
+                        # Optionally log URLs not meeting criteria.
                         pass
-                        # output_file.write(f"URL does not meet criteria: {url}\n")
                 else:
                     output_file.write(f"Page not found or error for: {url}\n")
             except requests.RequestException as e:
@@ -53,18 +53,31 @@ if __name__ == "__main__":
 
     base_url = "https://www.facebook.com/profile.php?id={}"
 
-    while True:
-        start_range = int(
+    search_type = Prompt.ask(
+        "[bold cyan]Start search from (1) a single ID or (2) a range of IDs?[/bold cyan]",
+        choices=["1", "2"])
+
+    if search_type == "1":
+        single_id = int(
+            Prompt.ask("[bold cyan]Enter the starting ID[/bold cyan]"))
+        num_check = int(
+            Prompt.ask(
+                "[bold cyan]How many IDs do you want to check starting from this ID?[/bold cyan]"
+            ))
+        start_id = single_id
+        end_id = single_id + num_check - 1  # To ensure we check 'num_check' number of IDs including the start ID.
+    else:
+        start_id = int(
             Prompt.ask("[bold cyan]Enter the start of the range[/bold cyan]",
                        default="1"))
-        end_range = int(
+        end_id = int(
             Prompt.ask("[bold cyan]Enter the end of the range[/bold cyan]"))
-        if start_range < end_range:
-            break
-        console.print(
-            "[bold red]Start of range must be less than end of range.[/bold red]"
-        )
+        if start_id >= end_id:
+            console.print(
+                "[bold red]Start of range must be less than the end of range.[/bold red]"
+            )
+            exit()
 
     output_file_path = "combined_output.txt"
 
-    check_url(base_url, start_range, end_range, output_file_path, console)
+    check_url(base_url, start_id, end_id, output_file_path, console)
